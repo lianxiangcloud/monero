@@ -109,6 +109,3 @@ target_link_libraries(common
   PRIVATE
     ${OPENSSL_LIBRARIES}
     ${EXTRA_LIBRARIES})
-
-#monero_install_headers(common
-#  ${common_headers})

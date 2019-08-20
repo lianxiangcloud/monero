@@ -33,13 +33,14 @@
 #include <memory>
 #include "misc_log_ex.h"
 
+#undef MONERO_DEFAULT_LOG_CATEGORY
+#define MONERO_DEFAULT_LOG_CATEGORY "perf"
+
+
 namespace tools
 {
 
-class PerformanceTimer;
-
 extern el::Level performance_timer_log_level;
-
 uint64_t get_tick_count();
 uint64_t get_ticks_per_ns();
 uint64_t ticks_to_ns(uint64_t ticks);
@@ -74,8 +75,7 @@ private:
   el::Level level;
 };
 
-void set_performance_timer_log_level(el::Level level);
-
+#if defined(OPEN_PERF)
 #define PERF_TIMER_UNIT(name, unit) tools::LoggingPerformanceTimer pt_##name(#name, "perf." MONERO_DEFAULT_LOG_CATEGORY, unit, tools::performance_timer_log_level)
 #define PERF_TIMER_UNIT_L(name, unit, l) tools::LoggingPerformanceTimer pt_##name(#name, "perf." MONERO_DEFAULT_LOG_CATEGORY, unit, l)
 #define PERF_TIMER(name) PERF_TIMER_UNIT(name, 1000000)
@@ -85,5 +85,18 @@ void set_performance_timer_log_level(el::Level level);
 #define PERF_TIMER_STOP(name) do { pt_##name.reset(NULL); } while(0)
 #define PERF_TIMER_PAUSE(name) pt_##name->pause()
 #define PERF_TIMER_RESUME(name) pt_##name->resume()
+#else
+
+#define PERF_TIMER_UNIT(name, unit)
+#define PERF_TIMER_UNIT_L(name, unit, l)
+#define PERF_TIMER(name)
+#define PERF_TIMER_L(name, l)
+#define PERF_TIMER_START_UNIT(name, unit)
+#define PERF_TIMER_START(name)
+#define PERF_TIMER_STOP(name)
+#define PERF_TIMER_PAUSE(name)
+#define PERF_TIMER_RESUME(name)
+
+#endif
 
 }

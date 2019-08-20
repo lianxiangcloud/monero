@@ -90,6 +90,41 @@ namespace rct {
         C = proof.V;
         return proof;
     }
+    Bulletproof proveRangeBulletproof(keyV &C, keyV &masks, const std::vector<key> &amounts, const std::vector<key> &sk, hw::device &hwdev)
+    {
+        CHECK_AND_ASSERT_THROW_MES(amounts.size() == sk.size(), "Invalid amounts/sk sizes");
+        masks.resize(amounts.size());
+        for (size_t i = 0; i < masks.size(); ++i)
+            masks[i] = hwdev.genCommitmentMask(sk[i]);
+        Bulletproof proof = bulletproof_PROVE(amounts, masks);
+        CHECK_AND_ASSERT_THROW_MES(proof.V.size() == amounts.size(), "V does not have the expected size");
+        C = proof.V;
+        return proof;
+    }
+    Bulletproof proveRangeBulletproof(keyV &C, keyV &masks, const std::vector<uint64_t> &amounts, const std::vector<key> &sk, hw::device &hwdev)
+    {
+        CHECK_AND_ASSERT_THROW_MES(amounts.size() == sk.size(), "Invalid amounts/sk sizes");
+        masks.resize(amounts.size());
+        for (size_t i = 0; i < masks.size(); ++i)
+            masks[i] = hwdev.genCommitmentMask(sk[i]);
+        Bulletproof proof = bulletproof_PROVE(amounts, masks);
+        CHECK_AND_ASSERT_THROW_MES(proof.V.size() == amounts.size(), "V does not have the expected size");
+        C = proof.V;
+        return proof;
+    }
+
+
+    Bulletproof proveRangeBulletproof128(keyV &C, keyV &masks, const std::vector<key> &amounts, const std::vector<key> &sk, hw::device &hwdev)
+    {
+        CHECK_AND_ASSERT_THROW_MES(amounts.size() == sk.size(), "Invalid amounts/sk sizes");
+        masks.resize(amounts.size());
+        for (size_t i = 0; i < masks.size(); ++i)
+            masks[i] = hwdev.genCommitmentMask(sk[i]);
+        Bulletproof proof = bulletproof_PROVE128(amounts, masks);
+        CHECK_AND_ASSERT_THROW_MES(proof.V.size() == amounts.size(), "V does not have the expected size");
+        C = proof.V;
+        return proof;
+    }
 
     bool verBulletproof(const Bulletproof &proof)
     {
@@ -101,6 +136,20 @@ namespace rct {
     bool verBulletproof(const std::vector<const Bulletproof*> &proofs)
     {
       try { return bulletproof_VERIFY(proofs); }
+      // we can get deep throws from ge_frombytes_vartime if input isn't valid
+      catch (...) { return false; }
+    }
+
+    bool verBulletproof128(const Bulletproof &proof)
+    {
+      try { return bulletproof_VERIFY128(proof); }
+      // we can get deep throws from ge_frombytes_vartime if input isn't valid
+      catch (...) { return false; }
+    }
+
+    bool verBulletproof128(const std::vector<const Bulletproof*> &proofs)
+    {
+      try { return bulletproof_VERIFY128(proofs); }
       // we can get deep throws from ge_frombytes_vartime if input isn't valid
       catch (...) { return false; }
     }
@@ -224,7 +273,6 @@ namespace rct {
 
         hwdev.mlsag_hash(toHash, c_old);
 
-        
         i = (index + 1) % cols;
         if (i == 0) {
             copy(rv.cc, c_old);
@@ -254,7 +302,9 @@ namespace rct {
                 copy(rv.cc, c_old);
             }   
         }
+
         hwdev.mlsag_sign(c, xx, alpha, rows, dsRows, rv.ss[index]);
+
         if (mscout)
           *mscout = c;
         return rv;
@@ -292,6 +342,7 @@ namespace rct {
         size_t i = 0, j = 0, ii = 0;
         key c,  L, R, Hi;
         key c_old = copy(rv.cc);
+
         vector<geDsmp> Ip(dsRows);
         for (i = 0 ; i < dsRows ; i++) {
             precomp(Ip[i].k, rv.II[i]);

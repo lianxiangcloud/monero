@@ -100,6 +100,7 @@ namespace cryptonote
     static constexpr uint8_t  BACKGROUND_MINING_MINER_MONITOR_INVERVAL_IN_SECONDS       = 10;
     static constexpr uint64_t BACKGROUND_MINING_DEFAULT_MINER_EXTRA_SLEEP_MILLIS        = 400; // ramp up 
     static constexpr uint64_t BACKGROUND_MINING_MIN_MINER_EXTRA_SLEEP_MILLIS            = 5;
+    static constexpr uint64_t MINING_INTERVAL_MS                                        = 100;
 
   private:
     bool worker_thread();
@@ -150,6 +151,7 @@ namespace cryptonote
     bool m_do_mining;
     std::vector<std::pair<uint64_t, uint64_t>> m_threads_autodetect;
     boost::thread::attributes m_attrs;
+    int m_mining_interval_ms;
 
     // background mining stuffs ..
 

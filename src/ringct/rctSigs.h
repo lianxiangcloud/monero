@@ -135,6 +135,13 @@ namespace rct {
     xmr_amount decodeRctSimple(const rctSig & rv, const key & sk, unsigned int i, hw::device &hwdev);
     key get_pre_mlsag_hash(const rctSig &rv, hw::device &hwdev);
     bool signMultisig(rctSig &rv, const std::vector<unsigned int> &indices, const keyV &k, const multisig_out &msout, const key &secret_key);
+    Bulletproof proveRangeBulletproof(keyV &C, keyV &masks, const std::vector<key> &amounts, epee::span<const key> sk, hw::device &hwdev);
+    Bulletproof proveRangeBulletproof(keyV &C, keyV &masks, const std::vector<key> &amounts, const std::vector<key> &sk, hw::device &hwdev);
+    Bulletproof proveRangeBulletproof(keyV &C, keyV &masks, const std::vector<uint64_t> &amounts, const std::vector<key> &sk, hw::device &hwdev);
+    Bulletproof proveRangeBulletproof128(keyV &C, keyV &masks, const std::vector<key> &amounts, const std::vector<key> &sk, hw::device &hwdev);
+    bool verBulletproof(const Bulletproof &proof);
+    bool verBulletproof(const std::vector<const Bulletproof*> &proofs);
+    bool verBulletproof128(const Bulletproof &proof);
+    bool verBulletproof128(const std::vector<const Bulletproof*> &proofs);
 }
 #endif  /* RCTSIGS_H */
-

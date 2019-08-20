@@ -654,6 +654,11 @@ namespace cryptonote
     CHECK_AND_ASSERT_MES(r, false, "failed to parse coinbase tx from hard coded blob");
     r = parse_and_validate_tx_from_blob(tx_bl, bl.miner_tx);
     CHECK_AND_ASSERT_MES(r, false, "failed to parse coinbase tx from hard coded blob");
+    LOG_PRINT_L2("bl.miner_tx version" << bl.miner_tx.version);
+    LOG_PRINT_L2("bl.miner_tx " << bl.miner_tx.vin.size());
+    LOG_PRINT_L2("bl.miner_tx " << bl.miner_tx.vout.size());
+    LOG_PRINT_L2("bl.miner_tx " << bl.miner_tx.hash);
+    LOG_PRINT_L2("bl.miner_tx " << bl.miner_tx.signatures.size());
     bl.major_version = CURRENT_BLOCK_MAJOR_VERSION;
     bl.minor_version = CURRENT_BLOCK_MINOR_VERSION;
     bl.timestamp = 0;

@@ -53,18 +53,21 @@ set(performance_tests_headers
   multi_tx_test_base.h
   performance_tests.h
   performance_utils.h
-  single_tx_test_base.h)
+  single_tx_test_base.h
+  x_fast_hybrid.h
+  rct_sig.h)
 
 add_executable(performance_tests
   ${performance_tests_sources}
   ${performance_tests_headers})
 target_link_libraries(performance_tests
   PRIVATE
-    wallet
+#    wallet
     cryptonote_core
     common
     cncrypto
     epee
+    device
     ${Boost_CHRONO_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${EXTRA_LIBRARIES})

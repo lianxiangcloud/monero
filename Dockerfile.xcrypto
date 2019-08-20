@@ -1,0 +1,79 @@
+# Multistage docker build, requires docker 17.05
+
+# builder stage
+FROM centos:7
+
+WORKDIR /src
+COPY . .
+
+ENV PATH=${PATH}:/usr/local/go/bin \
+    BOOST_ROOT=/usr/local/boost_1_68_0 \
+    OPENSSL_ROOT_DIR=/usr/local/openssl-1.1.1b
+
+RUN set -ex \
+    && yum -y install gcc gcc-c++ make bzip2 libtool libstdc++-static git \
+    && mkdir /usr/local/lklibs \
+    && cp -rf opt/* /usr/local/ \
+    && cd /usr/local \
+    && LKLIBS=/usr/local/lklibs \
+    && GOLANG_VERSION=1.12.7 \
+    && CMAKE_VERSION=3.14.0 \
+    && BOOST_VERSION=1_69_0 \
+    && OPENSSL_VERSION=1.1.1b \
+    && ZMQ_HASH=2cb1240db64ce1ea299e00474c646a2453a8435b \
+    && CPPZMQ_HASH=213da0b04ae3b4d846c9abc46bab87f86bfb9cf4 \
+    && SODIUM_HASH=b732443c442239c2e0184820e9b23cca0de0828c \
+    && tar -xzf go${GOLANG_VERSION}.linux-amd64.tar.gz \
+    && tar -xzf cmake-${CMAKE_VERSION}.tar.gz \
+    && cd cmake-${CMAKE_VERSION} \
+    && ./configure \
+    && make \
+    && make install \
+    && cd .. \
+    && tar -xvf boost_${BOOST_VERSION}.tar.bz2 \
+    && cd boost_${BOOST_VERSION} \
+    && ./bootstrap.sh \
+    && ./b2 --build-type=minimal link=static runtime-link=static --with-chrono --with-date_time --with-filesystem --with-program_options --with-regex --with-serialization --with-system --with-thread --with-locale threading=multi threadapi=pthread cflags="-fPIC" cxxflags="-fPIC" stage \
+    && export BOOST_ROOT=/usr/local/boost_${BOOST_VERSION} \
+    && cd .. \
+    && tar -xzf openssl-${OPENSSL_VERSION}.tar.gz \
+    && cd openssl-${OPENSSL_VERSION} \
+    && ./config -fPIC no-shared \
+    && make \
+    && export OPENSSL_ROOT_DIR=/usr/local/openssl-${OPENSSL_VERSION} \
+    && cd .. \
+    && cd libzmq \
+    && test `git rev-parse HEAD` = ${ZMQ_HASH} || exit 1 \
+    && ./autogen.sh \
+    && CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --enable-static --disable-shared \
+    && make \
+    && make install \
+    && ldconfig \
+    && cd .. \
+    && cd cppzmq \
+    && test `git rev-parse HEAD` = ${CPPZMQ_HASH} || exit 1 \
+    && mv *.hpp /usr/local/include \
+    && cd .. \
+    && cd libsodium \
+    && test `git rev-parse HEAD` = ${SODIUM_HASH} || exit 1 \
+    && ./autogen.sh \
+    && CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure \
+    && make  \
+    && make install \
+    && cp /tmp/libxcrypto/install/lib/libxcrypto.a ${LKLIBS} \
+    && cp /usr/local/lib/libsodium.a ${LKLIBS} \
+    && cp /usr/local/openssl-${OPENSSL_VERSION}/libssl.a ${LKLIBS} \
+    && cp /usr/local/openssl-${OPENSSL_VERSION}/libcrypto.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_regex.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_chrono.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_system.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_thread.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_date_time.a ${LKLIBS} \
+    && cp /usr/local/boost_${BOOST_VERSION}/stage/lib/libboost_filesystem.a ${LKLIBS} \
+    && cd / \
+    && rm -rf /src \
+    && yum clean all \
+    && ls -lah ${LKLIBS}/* \
+    && touch /var/log/tail.log
+
+CMD ["tail", "-s", "5", "-f", "/var/log/tail.log"]

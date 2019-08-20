@@ -43,9 +43,9 @@ set(crypto_sources
   jh.c
   keccak.c
   oaes_lib.c
-  random.c
   skein.c
   slow-hash.c
+  random.c
   CryptonightR_JIT.c
   tree-hash.c)
 

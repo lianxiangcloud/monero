@@ -96,6 +96,7 @@ namespace cryptonote
     const command_line::arg_descriptor<uint64_t>    arg_bg_mining_min_idle_interval_seconds =  {"bg-mining-min-idle-interval", "Specify min lookback interval in seconds for determining idle state", miner::BACKGROUND_MINING_DEFAULT_MIN_IDLE_INTERVAL_IN_SECONDS, true};
     const command_line::arg_descriptor<uint16_t>     arg_bg_mining_idle_threshold_percentage =  {"bg-mining-idle-threshold", "Specify minimum avg idle percentage over lookback interval", miner::BACKGROUND_MINING_DEFAULT_IDLE_THRESHOLD_PERCENTAGE, true};
     const command_line::arg_descriptor<uint16_t>     arg_bg_mining_miner_target_percentage =  {"bg-mining-miner-target", "Specify maximum percentage cpu use by miner(s)", miner::BACKGROUND_MINING_DEFAULT_MINING_TARGET_PERCENTAGE, true};
+    const command_line::arg_descriptor<uint64_t>      arg_bg_found_block_interval_ms =  {"bg_found_block_interval_ms", "", miner::MINING_INTERVAL_MS, true};
   }
 
 
@@ -285,6 +286,8 @@ namespace cryptonote
     command_line::add_arg(desc, arg_bg_mining_min_idle_interval_seconds);
     command_line::add_arg(desc, arg_bg_mining_idle_threshold_percentage);
     command_line::add_arg(desc, arg_bg_mining_miner_target_percentage);
+    command_line::add_arg(desc, arg_bg_found_block_interval_ms);
+
   }
   //-----------------------------------------------------------------------------------------------------
   bool miner::init(const boost::program_options::variables_map& vm, network_type nettype)
@@ -342,6 +345,8 @@ namespace cryptonote
       set_idle_threshold( command_line::get_arg(vm, arg_bg_mining_idle_threshold_percentage) );
     if(command_line::has_arg(vm, arg_bg_mining_miner_target_percentage))
       set_mining_target( command_line::get_arg(vm, arg_bg_mining_miner_target_percentage) );
+    if(command_line::has_arg(vm, arg_bg_found_block_interval_ms))
+      m_mining_interval_ms =  command_line::get_arg(vm, arg_bg_found_block_interval_ms) ;
 
     return true;
   }
@@ -572,6 +577,7 @@ namespace cryptonote
       {
         //we lucky!
         ++m_config.current_extra_message_index;
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(m_mining_interval_ms));
         MGINFO_GREEN("Found block " << get_block_hash(b) << " at height " << height << " for difficulty: " << local_diff);
         cryptonote::block_verification_context bvc;
         if(!m_phandler->handle_block_found(b, bvc) || !bvc.m_added_to_main_chain)

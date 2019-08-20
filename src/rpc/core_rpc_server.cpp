@@ -393,13 +393,26 @@ namespace cryptonote
     res.status = CORE_RPC_STATUS_OK;
     return true;
   }
+
+  void debug_print(const COMMAND_RPC_GET_HASHES_FAST::request& req){
+    LOG_PRINT_L1("start_height:"<<req.start_height);
+    auto bl_it = req.block_ids.begin();
+    for(; bl_it != req.block_ids.end(); bl_it++)
+    {
+      LOG_PRINT_L1("req->block_id:"<<*bl_it);
+    }
+  }
+
   //------------------------------------------------------------------------------------------------------------------------------
   bool core_rpc_server::on_get_hashes(const COMMAND_RPC_GET_HASHES_FAST::request& req, COMMAND_RPC_GET_HASHES_FAST::response& res, const connection_context *ctx)
   {
     PERF_TIMER(on_get_hashes);
     bool r;
-    if (use_bootstrap_daemon_if_necessary<COMMAND_RPC_GET_HASHES_FAST>(invoke_http_mode::BIN, "/gethashes.bin", req, res, r))
+    debug_print(req);
+    if (use_bootstrap_daemon_if_necessary<COMMAND_RPC_GET_HASHES_FAST>(invoke_http_mode::BIN, "/gethashes.bin", req, res, r)){
+      LOG_PRINT_L1("use_bootstrap_daemon_if_necessary: [on_get_hashes] fail");
       return r;
+    }
 
     res.start_height = req.start_height;
     if(!m_core.get_blockchain_storage().find_blockchain_supplement(req.block_ids, res.m_block_ids, res.start_height, res.current_height, false))
@@ -871,6 +884,93 @@ namespace cryptonote
     res.status = CORE_RPC_STATUS_OK;
     return true;
   }
+  //-----------------------------------------------------------------------------------------------
+
+  bool core_rpc_server::on_send_raw_txs(const COMMAND_RPC_SEND_RAW_TXS::request& req, COMMAND_RPC_SEND_RAW_TXS::response& res, const connection_context *ctx)
+  {
+    PERF_TIMER(on_send_raw_txs);
+    bool ok;
+    if (use_bootstrap_daemon_if_necessary<COMMAND_RPC_SEND_RAW_TXS>(invoke_http_mode::JON, "/sendrawtransactions", req, res, ok))
+      return ok;
+
+    CHECK_CORE_READY();
+
+    std::vector<cryptonote::blobdata> tx_blobs;
+    for (auto& tx_as_hex : req.tx_as_hex_list){
+      std::string tx_blob;
+      if(!string_tools::parse_hexstr_to_binbuff(tx_as_hex, tx_blob))
+      {
+        LOG_PRINT_L0("[on_send_raw_txs]: Failed to parse tx from hexbuff: " << tx_as_hex);
+        res.status = "Failed";
+        return true;
+      }
+      tx_blobs.push_back(tx_blob);
+    }
+    cryptonote_connection_context fake_context = AUTO_VAL_INIT(fake_context);
+    std::vector<tx_verification_context> tvcv(tx_blobs.size());
+    //if(!m_core.handle_incoming_tx(tx_blob, tvc, false, false, req.do_not_relay) || tvc.m_verifivation_failed)
+
+    if(!m_core.handle_incoming_txs(tx_blobs, tvcv, false, false, req.do_not_relay))
+    {
+      res.status = "Failed";
+      for (auto& tvc : tvcv) {
+        tx_result r;
+        r.reason = "";
+        if ((r.low_mixin = tvc.m_low_mixin))
+          add_reason(r.reason, "ring size too small");
+        if ((r.double_spend = tvc.m_double_spend))
+          add_reason(r.reason, "double spend");
+        if ((r.invalid_input = tvc.m_invalid_input))
+          add_reason(r.reason, "invalid input");
+        if ((r.invalid_output = tvc.m_invalid_output))
+          add_reason(r.reason, "invalid output");
+        if ((r.too_big = tvc.m_too_big))
+          add_reason(r.reason, "too big");
+        if ((r.overspend = tvc.m_overspend))
+          add_reason(r.reason, "overspend");
+        if ((r.fee_too_low = tvc.m_fee_too_low))
+          add_reason(r.reason, "fee too low");
+        if ((r.not_rct = tvc.m_not_rct))
+          add_reason(r.reason, "tx is not ringct");
+        const std::string punctuation = r.reason.empty() ? "" : ": ";
+        if (tvc.m_verifivation_failed)
+        {
+          LOG_PRINT_L0("[on_send_raw_txs]: tx verification failed" << punctuation << r.reason);
+        }
+        else
+        {
+          LOG_PRINT_L0("[on_send_raw_txs]: Failed to process tx" << punctuation << r.reason);
+        }
+		res.results.push_back(r);
+      }
+      return true;
+    }
+
+    NOTIFY_NEW_TRANSACTIONS::request notify_req;
+    res.status = CORE_RPC_STATUS_OK;
+
+    for (size_t i = 0; i < tvcv.size(); i++) {
+      tx_result r;
+      if(!tvcv[i].m_should_be_relayed)
+      {
+        LOG_PRINT_L0("[on_send_raw_txs]: tx accepted, but not relayed");
+        r.reason = "Not relayed";
+        r.not_relayed = true;
+      } else {
+        notify_req.txs.push_back(tx_blobs[i]);
+	  }
+	  res.results.push_back(r);
+	}
+
+    if (notify_req.txs.size() == 0){
+      return true;
+    }
+
+    m_core.get_protocol()->relay_transactions(notify_req, fake_context);
+    //TODO: make sure that tx has reached other nodes here, probably wait to receive reflections from other nodes
+    return true;
+  }
+
   //------------------------------------------------------------------------------------------------------------------------------
   bool core_rpc_server::on_start_mining(const COMMAND_RPC_START_MINING::request& req, COMMAND_RPC_START_MINING::response& res, const connection_context *ctx)
   {

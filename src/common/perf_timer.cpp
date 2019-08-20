@@ -103,6 +103,7 @@ void set_performance_timer_log_level(el::Level level)
   performance_timer_log_level = level;
 }
 
+#if defined(OPEN_PERF)
 PerformanceTimer::PerformanceTimer(bool paused): started(true), paused(paused)
 {
   if (paused)
@@ -135,6 +136,7 @@ LoggingPerformanceTimer::LoggingPerformanceTimer(const std::string &s, const std
     }
   }
   performance_timers->push_back(this);
+
 }
 
 PerformanceTimer::~PerformanceTimer()
@@ -161,7 +163,19 @@ LoggingPerformanceTimer::~LoggingPerformanceTimer()
     performance_timers = NULL;
   }
 }
+#else
+    PerformanceTimer::PerformanceTimer(bool paused): started(true), paused(paused) {}
 
+    LoggingPerformanceTimer::LoggingPerformanceTimer(const std::string &s, const std::string &cat, uint64_t unit, el::Level l): PerformanceTimer(), name(s), cat(cat), unit(unit), level(l)
+    {
+
+    }
+
+    PerformanceTimer::~PerformanceTimer() {}
+
+    LoggingPerformanceTimer::~LoggingPerformanceTimer() {}
+
+#endif
 void PerformanceTimer::pause()
 {
   if (paused)

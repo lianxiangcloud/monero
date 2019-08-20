@@ -631,6 +631,60 @@ namespace cryptonote
     typedef epee::misc_utils::struct_init<response_t> response;
   };
   //-----------------------------------------------
+  struct tx_result
+  {
+      std::string reason;
+      bool not_relayed;
+      bool low_mixin;
+      bool double_spend;
+      bool invalid_input;
+      bool invalid_output;
+      bool too_big;
+      bool overspend;
+      bool fee_too_low;
+      bool not_rct;
+
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(reason)
+        KV_SERIALIZE(not_relayed)
+        KV_SERIALIZE(low_mixin)
+        KV_SERIALIZE(double_spend)
+        KV_SERIALIZE(invalid_input)
+        KV_SERIALIZE(invalid_output)
+        KV_SERIALIZE(too_big)
+        KV_SERIALIZE(overspend)
+        KV_SERIALIZE(fee_too_low)
+        KV_SERIALIZE(not_rct)
+      END_KV_SERIALIZE_MAP()
+  };
+
+  struct COMMAND_RPC_SEND_RAW_TXS
+  {
+    struct request
+    {
+      std::list<std::string> tx_as_hex_list;
+      bool do_not_relay;
+
+      request() {}
+      explicit request(const transaction &);
+
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(tx_as_hex_list)
+        KV_SERIALIZE_OPT(do_not_relay, false)
+      END_KV_SERIALIZE_MAP()
+    };
+    struct response {
+      std::string status;
+      std::vector<tx_result> results;
+      bool untrusted;
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(status)
+        KV_SERIALIZE(results)
+        KV_SERIALIZE(untrusted)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
+  //-----------------------------------------------
   struct COMMAND_RPC_START_MINING
   {
     struct request_t

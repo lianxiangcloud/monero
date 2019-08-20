@@ -96,7 +96,9 @@ release-test:
 
 release-all:
 	mkdir -p $(builddir)/release
-	cd $(builddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE)
+	mkdir -p /tmp/libxcrypto/install
+	cd $(builddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/tmp/libxcrypto/install $(topdir) && $(MAKE)
+	cd $(builddir)/release && make install
 
 release-static:
 	mkdir -p $(builddir)/release

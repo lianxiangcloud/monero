@@ -122,8 +122,8 @@ set(enabled_tests
     core_tests
     difficulty
     block_weight
-    hash
     performance_tests
+    hash
     core_proxy
     fuzz
     unit_tests)

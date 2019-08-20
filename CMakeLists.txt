@@ -199,6 +199,9 @@ if(NOT MANUAL_SUBMODULES)
   endif()
 endif()
 
+execute_process(COMMAND bash -c "cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/cmake/easylogging++.cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/easylogging++/CMakeLists.txt" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+execute_process(COMMAND bash -c "cp -rf ${CMAKE_CURRENT_SOURCE_DIR}/cmake/unbound.cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/unbound/CMakeLists.txt" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG ${OPT_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${OPT_FLAGS_RELEASE}")
 
@@ -299,6 +302,9 @@ if(MSVC OR MINGW)
 else()
   set(DEFAULT_STATIC false)
 endif()
+
+# always make static.
+set(DEFAULT_STATIC true)
 option(STATIC "Link libraries statically" ${DEFAULT_STATIC})
 
 # This is a CMake built-in switch that concerns internal libraries
@@ -593,10 +599,13 @@ else()
     message(STATUS "AES support disabled")
   endif()
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ARCH_FLAG}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_FLAG}")
+  set(CMAKE_C_FLAGS "-g -O3 ${CMAKE_C_FLAGS} ${ARCH_FLAG}")
+  set(CMAKE_CXX_FLAGS "-g -O3 ${CMAKE_CXX_FLAGS} ${ARCH_FLAG}")
 
   set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=deprecated-declarations -Wno-unused-parameter -Wno-unused-variable -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized")
+  #if(NOT MINGW)
+  #  set(WARNINGS_AS_ERRORS_FLAG "-Werror")
+  #endif()
   if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
     if(ARM)
       set(WARNINGS "${WARNINGS} -Wno-error=inline-asm")
@@ -996,9 +1005,9 @@ endif()
 
 add_subdirectory(contrib)
 add_subdirectory(src)
-
+add_subdirectory(tests/performance_tests)
 if(BUILD_TESTS)
-  add_subdirectory(tests)
+#  add_subdirectory(tests)
 endif()
 
 if(BUILD_DOCUMENTATION)
