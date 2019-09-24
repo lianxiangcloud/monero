@@ -2,6 +2,9 @@
 
 git submodule init && git submodule update
 
+if [ ! -d "opt" ]; then
+  mkdir opt
+fi
 cd opt
 
 # Golang
